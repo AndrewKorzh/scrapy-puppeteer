@@ -24,7 +24,18 @@ DOWNLOADER_MIDDLEWARES = {
 }
 
 PUPPETEER_SERVICE_URL = 'http://localhost:3000'
-``` 
+```
+Options in `settings.py` to run locally. 
+```python
+PUPPETEER_LOCAL = True
+```
+To run locally, you need to add a field local_scrapy_pyppeteer initialized by the LocalScrapyPyppeteer object to the spider.
+```python
+from scrapypuppeteer.scrappypyppeteer import LocalScrapyPyppeteer
+
+self.local_scrapy_pyppeteer = LocalScrapyPyppeteer()
+```
+
 
 ## Basic usage
 
