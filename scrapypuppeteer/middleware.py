@@ -62,22 +62,31 @@ class PuppeteerServiceDownloaderMiddleware:
     SERVICE_META_SETTING = "PUPPETEER_INCLUDE_META"
     DEFAULT_INCLUDE_HEADERS = ["Cookie"]  # TODO send them separately
 
+    PUPPETEER_LOCAL_SETTING = "PUPPETEER_LOCAL"
+
+    service_logger = logging.getLogger(__name__)
+
     def __init__(
         self,
         crawler: Crawler,
         service_url: str,
         include_headers: Union[bool, List[str]],
         include_meta: bool,
+        local_mode: bool
     ):
         self.service_base_url = service_url
         self.include_headers = include_headers
         self.include_meta = include_meta
         self.crawler = crawler
         self.used_contexts = defaultdict(set)
+        self.local_mode = local_mode
 
     @classmethod
     def from_crawler(cls, crawler):
         service_url = crawler.settings.get(cls.SERVICE_URL_SETTING)
+        local_mode = crawler.settings.getbool(cls.PUPPETEER_LOCAL_SETTING, False)
+        if local_mode:
+            print("\n\LOCAL MODE\n\n")
         if service_url is None:
             raise ValueError("Puppeteer service URL must be provided")
         if cls.INCLUDE_HEADERS_SETTING in crawler.settings:
@@ -88,9 +97,9 @@ class PuppeteerServiceDownloaderMiddleware:
         else:
             include_headers = cls.DEFAULT_INCLUDE_HEADERS
         include_meta = crawler.settings.getbool(cls.SERVICE_META_SETTING, False)
-        middleware = cls(crawler, service_url, include_headers, include_meta)
+        middleware = cls(crawler, service_url, include_headers, include_meta, local_mode)
         crawler.signals.connect(
-            middleware.close_used_contexts, signal=signals.spider_closed
+            middleware.close_used_contexts, signal=signals.spider_idle
         )
         return middleware
 
