@@ -90,7 +90,7 @@ class PuppeteerServiceDownloaderMiddleware:
         service_url = crawler.settings.get(cls.SERVICE_URL_SETTING)
         local_mode = crawler.settings.getbool(cls.PUPPETEER_LOCAL_SETTING, False)
         if local_mode:
-            print("LOCAL MODE\n\n")
+            print("\n\LOCAL MODE\n\n")
         if service_url is None:
             raise ValueError("Puppeteer service URL must be provided")
         if cls.INCLUDE_HEADERS_SETTING in crawler.settings:
@@ -108,7 +108,7 @@ class PuppeteerServiceDownloaderMiddleware:
         return middleware
 
     def process_request(self, request, spider):
-
+        
         if isinstance(request, CloseContextRequest):
             return self.process_close_context_request(request)
 
@@ -150,11 +150,15 @@ class PuppeteerServiceDownloaderMiddleware:
             errback=request.errback,
             meta=meta,
         )
+        print("Request\n")
+        print(action_request.url)
+        print()
 
         if self.local_mode:
-            pyppeteer_response = spider.local_scrapy_pyppeteer.process_puppeteer_request(action_request)
-            return pyppeteer_response
+            puppeteer_html_response = spider.browser_manager.process_puppeteer_request(action_request)
+            print(action_request.action.payload())
 
+            return puppeteer_html_response
         return action_request
 
     @staticmethod
@@ -191,8 +195,8 @@ class PuppeteerServiceDownloaderMiddleware:
                 payload["headers"] = headers
             return json.dumps(payload)
         return str(payload)
-
-
+    
+    
 
     def process_response(self, request, response, spider):
 
@@ -285,6 +289,9 @@ class PuppeteerServiceDownloaderMiddleware:
             dfd.addBoth(handle_close_contexts_result)
 
             raise DontCloseSpider()
+
+
+
 
 
 class PuppeteerRecaptchaDownloaderMiddleware:

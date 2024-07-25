@@ -1,3 +1,4 @@
+import warnings
 from typing import Tuple, Union
 
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -5,8 +6,6 @@ from scrapy.http import TextResponse
 
 from scrapypuppeteer import PuppeteerRequest
 from scrapypuppeteer.actions import GoTo, PuppeteerServiceAction
-
-import warnings
 
 
 class PuppeteerResponse(TextResponse):
@@ -121,6 +120,32 @@ class PuppeteerJsonResponse(PuppeteerResponse):
         kwargs["headers"] = {"Content-Type": "application/json"}
         self.data = data
         super().__init__(url, puppeteer_request, context_id, page_id, **kwargs)
+
+    def to_html(self) -> PuppeteerHtmlResponse:
+        """
+        Tries to converge a PuppeteerJsonResponse to a PuppeteerHtmlResponse.
+        For this self.data must be dict.
+        Then self.data must have "html" key with a string containing a page content
+        and "cookies" key with a list of cookies or None.
+
+        If the .data property does not have at least 1 argument the error is raised.
+        """
+        if not isinstance(self.data, dict):
+            raise TypeError(
+                "PuppeteerJsonResponse's .data property must be a dict"
+                "to converse it to a PuppeteerHtmlResponse."
+            )
+
+        kwargs = dict()
+        for attr in PuppeteerResponse.attributes:
+            kwargs[attr] = getattr(self, attr)
+        kwargs["html"] = self.data["html"]
+        kwargs["body"] = kwargs["html"]
+        kwargs["cookies"] = self.data["cookies"]
+        kwargs["headers"].update({"Content-Type": ["text/html"]})
+        kwargs["encoding"] = "utf-8"
+
+        return PuppeteerHtmlResponse(**kwargs)
 
 
 class PuppeteerRecaptchaSolverResponse(PuppeteerJsonResponse, PuppeteerHtmlResponse):
