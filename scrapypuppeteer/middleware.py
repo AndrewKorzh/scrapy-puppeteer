@@ -155,7 +155,7 @@ class PuppeteerServiceDownloaderMiddleware:
         print()
 
         if self.local_mode:
-            puppeteer_html_response = spider.browser_manager.process_puppeteer_request(action_request)
+            puppeteer_html_response = spider.local_scrapy_pyppeteer.process_puppeteer_request(action_request)
             print(action_request.action.payload())
 
             return puppeteer_html_response
