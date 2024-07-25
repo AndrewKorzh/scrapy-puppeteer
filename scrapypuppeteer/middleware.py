@@ -29,6 +29,7 @@ from scrapypuppeteer.response import (
     PuppeteerJsonResponse,
 )
 from scrapypuppeteer.request import ActionRequest, PuppeteerRequest, CloseContextRequest
+from scrapypuppeteer.scrappypyppeteer import LocalScrapyPyppeteer
 
 import asyncio
 
@@ -76,7 +77,8 @@ class PuppeteerServiceDownloaderMiddleware:
         service_url: str,
         include_headers: Union[bool, List[str]],
         include_meta: bool,
-        local_mode: bool
+        local_mode: bool,
+        local_scrapy_pyppeteer: LocalScrapyPyppeteer
     ):
         self.service_base_url = service_url
         self.include_headers = include_headers
@@ -84,13 +86,16 @@ class PuppeteerServiceDownloaderMiddleware:
         self.crawler = crawler
         self.used_contexts = defaultdict(set)
         self.local_mode = local_mode
+        self.local_scrapy_pyppeteer = local_scrapy_pyppeteer
 
     @classmethod
     def from_crawler(cls, crawler):
         service_url = crawler.settings.get(cls.SERVICE_URL_SETTING)
         local_mode = crawler.settings.getbool(cls.PUPPETEER_LOCAL_SETTING, False)
+        local_scrapy_pyppeteer = None
         if local_mode:
-            print("\n\LOCAL MODE\n\n")
+            print("\n\nLOCAL MODE\n\n")
+            local_scrapy_pyppeteer = LocalScrapyPyppeteer()
         if service_url is None:
             raise ValueError("Puppeteer service URL must be provided")
         if cls.INCLUDE_HEADERS_SETTING in crawler.settings:
@@ -101,7 +106,7 @@ class PuppeteerServiceDownloaderMiddleware:
         else:
             include_headers = cls.DEFAULT_INCLUDE_HEADERS
         include_meta = crawler.settings.getbool(cls.SERVICE_META_SETTING, False)
-        middleware = cls(crawler, service_url, include_headers, include_meta, local_mode)
+        middleware = cls(crawler, service_url, include_headers, include_meta, local_mode, local_scrapy_pyppeteer)
         crawler.signals.connect(
             middleware.close_used_contexts, signal=signals.spider_idle
         )
@@ -113,7 +118,7 @@ class PuppeteerServiceDownloaderMiddleware:
             return self.process_close_context_request(request)
 
         if isinstance(request, PuppeteerRequest):
-            return self.process_puppeteer_request(request, spider)
+            return self.process_puppeteer_request(request)
 
     def process_close_context_request(self, request: CloseContextRequest):
         if not request.is_valid_url:
@@ -121,7 +126,7 @@ class PuppeteerServiceDownloaderMiddleware:
                 url=urljoin(self.service_base_url, "/close_context"),
             )
 
-    def process_puppeteer_request(self, request: PuppeteerRequest, spider):
+    def process_puppeteer_request(self, request: PuppeteerRequest):
         action = request.action
         service_url = urljoin(self.service_base_url, action.endpoint)
         service_params = self._encode_service_params(request)
@@ -155,10 +160,10 @@ class PuppeteerServiceDownloaderMiddleware:
         print()
 
         if self.local_mode:
-            puppeteer_html_response = spider.local_scrapy_pyppeteer.process_puppeteer_request(action_request)
+            puppeteer_response = self.local_scrapy_pyppeteer.process_puppeteer_request(action_request)
             print(action_request.action.payload())
 
-            return puppeteer_html_response
+            return puppeteer_response
         return action_request
 
     @staticmethod
