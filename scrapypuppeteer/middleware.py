@@ -90,7 +90,7 @@ class PuppeteerServiceDownloaderMiddleware:
         service_url = crawler.settings.get(cls.SERVICE_URL_SETTING)
         local_mode = crawler.settings.getbool(cls.PUPPETEER_LOCAL_SETTING, False)
         if local_mode:
-            print("\n\LOCAL MODE\n\n")
+            print("LOCAL MODE\n\n")
         if service_url is None:
             raise ValueError("Puppeteer service URL must be provided")
         if cls.INCLUDE_HEADERS_SETTING in crawler.settings:
@@ -152,9 +152,9 @@ class PuppeteerServiceDownloaderMiddleware:
         )
 
         if self.local_mode:
-            puppeteer_html_response = spider.browser_manager.process_puppeteer_request(action_request)
+            pyppeteer_response = spider.local_scrapy_pyppeteer.process_puppeteer_request(action_request)
+            return pyppeteer_response
 
-            return puppeteer_html_response
         return action_request
 
     @staticmethod
