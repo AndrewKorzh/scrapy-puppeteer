@@ -104,6 +104,9 @@ class LocalScrapyPyppeteer:
         elif endpoint == "forward":
             puppeteer_html_response = self.go_forward(action_request)
             return puppeteer_html_response
+        elif endpoint == "scroll":
+            puppeteer_screenshot_response = self.scroll(action_request)
+            return puppeteer_screenshot_response
         elif endpoint == "screenshot":
             puppeteer_screenshot_response = self.screenshot(action_request)
             return puppeteer_screenshot_response
@@ -299,5 +302,59 @@ class LocalScrapyPyppeteer:
             return puppeteer_screenshot_response
 
         return syncer.sync(async_screenshot())
+    
+
+
+
+
+    def scroll(self, action_request: ActionRequest):
+            puppeteer_request = action_request.meta.get("puppeteer_request")
+            context_id, page_id = syncer.sync(self.context_manager.check_context_and_page(puppeteer_request.context_id, puppeteer_request.page_id))
+            page = self.context_manager.get_page_by_id(context_id, page_id)
+
+            async def async_scroll():
+                cookies = action_request.cookies
+                selector = action_request.action.payload().get("selector", None)
+
+                if selector:
+                    script = f"""
+                    document.querySelector('{selector}').scrollIntoView();
+                    """
+                else:
+                    script = """
+                    window.scrollBy(0, document.body.scrollHeight);
+                    """
+
+                await page.evaluate(script)
+
+                #Wait options
+                wait_options = action_request.action.payload().get("waitOptions", {}) or {}
+                timeout = wait_options.get("selectorOrTimeout", 1000)
+                visible = wait_options.get("visible", False)
+                hidden = wait_options.get("hidden", False)
+
+                if isinstance(timeout, (int, float)):
+                    await asyncio.sleep(timeout / 1000)
+                else:
+                    await page.waitFor(selector=timeout, options={
+                        'visible': visible,
+                        'hidden': hidden,
+                        'timeout': 30000
+                    })
+                #Wait options
+
+                response_html = await page.content()
+                service_url = action_request.url
+                puppeteer_html_response = PuppeteerHtmlResponse(service_url,
+                                            puppeteer_request,
+                                            context_id = context_id,
+                                            page_id = page_id,
+                                            html = response_html,
+                                            cookies=cookies)
+
+                return puppeteer_html_response
+
+            return syncer.sync(async_scroll())
+
 
 
