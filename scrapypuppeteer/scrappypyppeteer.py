@@ -132,8 +132,8 @@ class LocalScrapyPyppeteer:
             url = action_request.action.payload()["url"]
             service_url = action_request.url
             cookies = action_request.cookies
-
-            await page.goto(url)
+            navigation_options = action_request.action.navigation_options
+            await page.goto(url, navigation_options)
 
             #Wait options
             wait_options = action_request.action.payload().get("waitOptions", {}) or {}
@@ -160,8 +160,13 @@ class LocalScrapyPyppeteer:
         async def async_click():
             selector = action_request.action.payload().get("selector")
             cookies = action_request.cookies
-            click_options = action_request.action.click_options
-            await page.click(selector, click_options)
+            click_options = action_request.action.click_options or {}
+            navigation_options = action_request.action.navigation_options or {}
+            options = merged = {**click_options, **navigation_options}
+
+            await page.click(selector, options)
+            #navigation_options = action_request.action.navigation_options
+            #await page.waitForNavigation(navigation_options)
             #Wait options
             wait_options = action_request.action.payload().get("waitOptions", {}) or {}
             await self.wait_with_options(page, wait_options)
@@ -188,8 +193,8 @@ class LocalScrapyPyppeteer:
 
         async def async_go_back():
             cookies = action_request.cookies
-
-            await page.goBack()
+            navigation_options = action_request.action.navigation_options
+            await page.goBack(navigation_options)
 
             #Wait options
             wait_options = action_request.action.payload().get("waitOptions", {}) or {}
@@ -217,8 +222,8 @@ class LocalScrapyPyppeteer:
 
         async def async_go_forward():
             cookies = action_request.cookies
-
-            await page.goForward()
+            navigation_options = action_request.action.navigation_options
+            await page.goForward(navigation_options)
 
             #Wait options
             wait_options = action_request.action.payload().get("waitOptions", {}) or {}
@@ -312,6 +317,7 @@ class LocalScrapyPyppeteer:
     
 
     def action(self, action_request: ActionRequest):
+
         raise ValueError("CustomJsAction is not available in local mode")
 
 
