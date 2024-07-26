@@ -96,8 +96,12 @@ class PuppeteerServiceDownloaderMiddleware:
         if local_mode:
             print("\n\nLOCAL MODE\n\n")
             local_scrapy_pyppeteer = LocalScrapyPyppeteer()
+
+        if local_mode:
+            service_url = 'http://_running_local_'
+
         if service_url is None:
-            raise ValueError("Puppeteer service URL must be provided")
+                raise ValueError("Puppeteer service URL must be provided")
         if cls.INCLUDE_HEADERS_SETTING in crawler.settings:
             try:
                 include_headers = crawler.settings.getbool(cls.INCLUDE_HEADERS_SETTING)
